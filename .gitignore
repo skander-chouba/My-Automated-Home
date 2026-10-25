@@ -1,0 +1,22 @@
+cat << 'EOF' > .gitignore
+# Home Assistant sensitive data & Philips Hue auth tokens
+config/.storage/
+config/.cloud/
+config/secrets.yaml
+config/*.pem
+config/*.key
+
+# Downloaded third-party code / integrations
+config/custom_components/
+config/deps/
+config/www/community/
+
+# Databases, logs, and temporary files
+config/*.db*
+config/*.log*
+config/backups/
+config/tts/
+config/blueprints/
+**/__pycache__/
+.HA_VERSION
+EOF

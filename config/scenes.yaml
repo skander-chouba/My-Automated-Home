@@ -1,0 +1,153 @@
+- id: '1792957151431'
+  name: Cool Bright
+  entities:
+    light.bedroom_bulb_1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 254
+      color_temp_kelvin: 4000
+      hs_color:
+      - 26.812
+      - 34.87
+      rgb_color:
+      - 255
+      - 206
+      - 166
+      xy_color:
+      - 0.42
+      - 0.365
+      friendly_name: Bulb 1
+      supported_features: 0
+      state: 'on'
+    light.bedroom_bulb_2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 254
+      color_temp_kelvin: 4000
+      hs_color:
+      - 26.812
+      - 34.87
+      rgb_color:
+      - 255
+      - 206
+      - 166
+      xy_color:
+      - 0.42
+      - 0.365
+      friendly_name: Bulb 2
+      supported_features: 0
+      state: 'on'
+  metadata:
+    light.bedroom_bulb_1:
+      entity_only: true
+    light.bedroom_bulb_2:
+      entity_only: true
+  icon: mdi:white-balance-sunny
+- id: '1792957211805'
+  name: Energize
+  entities:
+    light.bedroom_bulb_1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 254
+      color_temp_kelvin: 6410
+      hs_color:
+      - 41.14
+      - 2.841
+      rgb_color:
+      - 255
+      - 253
+      - 248
+      xy_color:
+      - 0.328
+      - 0.334
+      friendly_name: Bulb 1
+      supported_features: 0
+      state: 'on'
+    light.bedroom_bulb_2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 254
+      color_temp_kelvin: 6410
+      hs_color:
+      - 41.14
+      - 2.841
+      rgb_color:
+      - 255
+      - 253
+      - 248
+      xy_color:
+      - 0.328
+      - 0.334
+      friendly_name: Bulb 2
+      supported_features: 0
+      state: 'on'
+  metadata:
+    light.bedroom_bulb_1:
+      entity_only: true
+    light.bedroom_bulb_2:
+      entity_only: true
+  icon: mdi:lightning-bolt
+- id: '1792957295876'
+  name: Sleepy
+  entities:
+    light.bedroom_bulb_1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 64
+      color_temp_kelvin: 2000
+      hs_color:
+      - 30.601
+      - 94.547
+      rgb_color:
+      - 255
+      - 137
+      - 14
+      xy_color:
+      - 0.598
+      - 0.383
+      friendly_name: Bulb 1
+      supported_features: 0
+      state: 'on'
+    light.bedroom_bulb_2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      color_mode: color_temp
+      brightness: 64
+      color_temp_kelvin: 2000
+      hs_color:
+      - 30.601
+      - 94.547
+      rgb_color:
+      - 255
+      - 137
+      - 14
+      xy_color:
+      - 0.598
+      - 0.383
+      friendly_name: Bulb 2
+      supported_features: 0
+      state: 'on'
+  metadata:
+    light.bedroom_bulb_1:
+      entity_only: true
+    light.bedroom_bulb_2:
+      entity_only: true
+  icon: mdi:sleep

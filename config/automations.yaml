@@ -1,0 +1,28 @@
+- id: '1792951025131'
+  alias: Light Automation Test
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - sensor.my_s24ultra_battery_state
+    from:
+    - discharging
+    to:
+    - charging
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 10
+  conditions:
+  - condition: time
+    after: '23:59:00'
+    before: 05:00:00
+  actions:
+  - action: light.turn_on
+    metadata: {}
+    target:
+      area_id: bedroom
+    data:
+      color_temp_kelvin: 2563
+      brightness_pct: 21
+  mode: single
