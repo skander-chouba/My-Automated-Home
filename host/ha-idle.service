@@ -1,0 +1,11 @@
+[Unit]
+Description=Report computer activity to Home Assistant
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/docker/homeassistant/host/ha-idle.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

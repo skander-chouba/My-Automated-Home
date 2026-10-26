@@ -140,6 +140,7 @@ All automations live in `config/automations.yaml` (managed by the UI editor). En
 | `light.bedroom_bulb_1`, `light.bedroom_bulb_2` | Philips Hue BLE (area `bedroom`) |
 | `sensor.my_s24ultra_battery_state`, `sensor.my_s24ultra_sleep_confidence`, `binary_sensor.my_s24ultra_interactive`, `notify.mobile_app_my_s24ultra` | Companion app on `my S24Ultra` (sleep confidence and interactive sensors must be enabled in the app) |
 | `person.skander_chouba` | Person, tracked by the phone |
+| `binary_sensor.computer_active` | Pushed every 30 s by `host/ha-idle.sh` on the Ubuntu desktop (see section 7) |
 | `binary_sensor.user_active` | Template helper: `on` when the phone is interactive **or** `binary_sensor.computer_active` is `on` |
 | `input_boolean.geranium_outside` | Toggle helper "Geranium outside" (set by hand) |
 | `weather.forecast_home` | Met.no weather integration |
@@ -205,7 +206,32 @@ Toggle **Geranium outside** whenever the plant is moved, otherwise the reminders
 
 ---
 
-## 📁 7. Repository Layout
+## 🖥️ 7. Computer Activity Sensor
+
+`binary_sensor.computer_active` tells Home Assistant whether you are using the Ubuntu desktop. Together with the phone's `interactive` sensor it feeds `binary_sensor.user_active`, which the **Sleep detected - lights off** automation waits on.
+
+`host/ha-idle.sh` runs as a systemd user service. Every 30 s it reads GNOME's idle time (`org.gnome.Mutter.IdleMonitor`, works on Wayland) and posts to `/api/states/binary_sensor.computer_active`:
+
+* `on`: keyboard or mouse input within the last 2 minutes (`idle_seconds` attribute shows the idle time)
+* `off`: idle for 2+ minutes, no GNOME session, or the service stopped
+
+### Install
+
+1. In Home Assistant, open your **Profile** → **Security** → **Long-lived access tokens** → **Create token**.
+2. Save it outside the repo:
+   ```bash
+   mkdir -p ~/.config/ha-idle && nano ~/.config/ha-idle/token && chmod 600 ~/.config/ha-idle/token
+   ```
+3. Install and start the service:
+   ```bash
+   cp ~/docker/homeassistant/host/ha-idle.service ~/.config/systemd/user/
+   systemctl --user daemon-reload
+   systemctl --user enable --now ha-idle
+   ```
+
+---
+
+## 📁 8. Repository Layout
 
 ```
 docker-compose.yml               # Home Assistant container
@@ -213,6 +239,8 @@ config/configuration.yaml        # Includes automations, scripts, scenes
 config/automations.yaml          # Automations (section 6)
 config/scenes.yaml               # Scenes (section 5)
 config/scripts.yaml              # Empty
+host/ha-idle.sh                  # Computer activity reporter (section 7)
+host/ha-idle.service             # systemd user unit for it
 domeassistantsetupgemini.txt     # Setup command notes
 ```
 
@@ -220,12 +248,13 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 
 ---
 
-## 🛠️ 8. Troubleshooting & Lessons Learned
+## 🛠️ 9. Troubleshooting & Lessons Learned
 
 | Issue | Root Cause | Solution |
 | :--- | :--- | :--- |
 | **Phone app fails with `ERR_CONNECTION_ABORTED` on `192.168.0.164:8123`** | Host firewall (`ufw`) or active **NordVPN** tunnel dropping local LAN HTTP requests. | Run `sudo ufw allow 8123/tcp` and `nordvpn whitelist add subnet 192.168.0.0/24` (or disconnect NordVPN). |
 | **Automation error: `two or more values in the same group of exclusion 'brightness'`** | Both `brightness_pct` (absolute %) and `brightness_step_pct` (relative step %) were selected in `light.turn_on`. | Only use **`brightness_pct`** (e.g., `21`) and uncheck `brightness_step_pct`. |
 | **Charging trigger didn't fire automatically when plugging in phone** | Trigger was filtering for `from: not_charging` to `charging`, but Android reports **`discharging`** when unplugged. | Set **`from:`** to `discharging` (current setup) or leave it blank. Blank also covers plugging in from `full` / `not_charging`. |
-| **Using the PC doesn't keep the lights on** | `binary_sensor.user_active` also checks `binary_sensor.computer_active`, which does not exist yet (it always reads as `off`). | Only phone activity counts for now; create a computer activity sensor with that entity ID to include the PC. |
+| **Sleep automation never fires** | `binary_sensor.computer_active` stuck at `on` because the old reporter script stopped without sending `off`. | The current `host/ha-idle.sh` sends `off` on stop and when no GNOME session is found. Check it with `systemctl --user status ha-idle`. |
+| **`binary_sensor.computer_active` missing from Settings → Entities** | It is set through the REST API, so it has no registry entry and disappears after an HA restart until the next report (≤ 30 s). | Expected; it still works in templates and automations. |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |
