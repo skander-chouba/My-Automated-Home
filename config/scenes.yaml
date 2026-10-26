@@ -151,3 +151,54 @@
     light.bedroom_bulb_2:
       entity_only: true
   icon: mdi:sleep
+- id: '1792970227550'
+  name: Storybook
+  entities:
+    light.bedroom_bulb_1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      friendly_name: Bulb 1
+      supported_features: 0
+      color_mode: color_temp
+      brightness: 177
+      color_temp_kelvin: 2702
+      hs_color:
+      - 28.391
+      - 65.659
+      rgb_color:
+      - 255
+      - 167
+      - 88
+      xy_color:
+      - 0.524
+      - 0.388
+      state: 'on'
+    light.bedroom_bulb_2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      supported_color_modes:
+      - color_temp
+      friendly_name: Bulb 2
+      supported_features: 0
+      color_mode: color_temp
+      brightness: 177
+      color_temp_kelvin: 2702
+      hs_color:
+      - 28.391
+      - 65.659
+      rgb_color:
+      - 255
+      - 167
+      - 88
+      xy_color:
+      - 0.524
+      - 0.388
+      state: 'on'
+  metadata:
+    light.bedroom_bulb_1:
+      entity_only: true
+    light.bedroom_bulb_2:
+      entity_only: true
+  icon: mdi:book-open-blank-variant

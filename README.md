@@ -10,6 +10,8 @@ Complete documentation for deploying a local, cloud-free **Home Assistant** inst
 * **Host Local IP:** `192.168.0.164` (Port `8123`)
 * **Bluetooth Controller:** Intel Corporate (`hci0` — MAC: `A8:59:5F:F9:E9:C0`)
 * **Smart Lighting:** 2x Philips Hue Bluetooth Bulbs (`Bulb 1`, `Bulb 2` assigned to the `Bedroom` area)
+* **Home Assistant version:** 2026.10.4 (`stable` image)
+* **Wearable:** Galaxy Watch8 registered through the Companion App
 * **Mobile Device & Sensor Hub:** Samsung Galaxy S24 Ultra (`my S24Ultra`) running the official Home Assistant Companion App
 
 ---
@@ -103,7 +105,16 @@ Access the web UI at **`http://localhost:8123`** (or **`http://192.168.0.164:812
 
 ---
 
-## 🎨 5. Saved Scenes (`Cool Bright` & Presets)
+## 🎨 5. Saved Scenes
+
+Defined in `config/scenes.yaml`, each sets both bedroom bulbs:
+
+| Scene | Brightness | Color temp | Used by |
+| :--- | :--- | :--- | :--- |
+| `scene.cool_bright` | 100% (254) | 4000 K | Coming home after Sunset |
+| `scene.energize` | 100% (254) | 6410 K | — |
+| `scene.sleepy` | 25% (64) | 2000 K | Light Automation Test |
+| `scene.storybook` | 70% (177) | 2702 K | — |
 
 Scenes capture the exact current state (On/Off, brightness, and color temperature) of specific light entities so they can be recalled with one tap or inside automations.
 
@@ -120,48 +131,101 @@ Scenes capture the exact current state (On/Off, brightness, and color temperatur
 
 ---
 
-## ⚡ 6. Automation Blueprint: Evening Phone Charging Light Control
+## ⚡ 6. Automations
 
-Automatically sets the Bedroom lights (`Bulb 1` and `Bulb 2`) to a warm, low-brightness evening mode (`21%` brightness, `2563K` warm color temperature) when the S24 Ultra is plugged in to charge between 6:00 PM and 5:00 AM.
+All automations live in `config/automations.yaml` (managed by the UI editor). Entities they depend on:
 
-### YAML Configuration (`Light Automation Test`)
-*(Located in `~/docker/homeassistant/config/automations.yaml` or via the UI editor)*
+| Entity | Source |
+| :--- | :--- |
+| `light.bedroom_bulb_1`, `light.bedroom_bulb_2` | Philips Hue BLE (area `bedroom`) |
+| `sensor.my_s24ultra_battery_state`, `sensor.my_s24ultra_sleep_confidence`, `binary_sensor.my_s24ultra_interactive`, `notify.mobile_app_my_s24ultra` | Companion app on `my S24Ultra` (sleep confidence and interactive sensors must be enabled in the app) |
+| `person.skander_chouba` | Person, tracked by the phone |
+| `binary_sensor.user_active` | Template helper: `on` when the phone is interactive **or** `binary_sensor.computer_active` is `on` |
+| `input_boolean.geranium_outside` | Toggle helper "Geranium outside" (set by hand) |
+| `weather.forecast_home` | Met.no weather integration |
+
+| Automation | Trigger | Conditions | Action |
+| :--- | :--- | :--- | :--- |
+| **Light Automation Test** (bedtime charging) | Phone battery state `discharging` → `charging` for 10 s | 23:59–05:00, person `home` | Scene `Sleepy` |
+| **Coming home after Sunset** | Person → `home` | After sunset or before sunrise | Scene `Cool Bright` |
+| **Leaving home - bedroom lights off** | Person → `not_home` for 2 min | — | Turn off area `bedroom` |
+| **Sleep detected - lights off** | `binary_sensor.user_active` → `off` for 15 min | Sleep confidence > 80, person `home`, 22:00–10:00 | Turn off all lights |
+| **Geranium - move inside tonight** | Daily 18:00 | `geranium_outside` is `on`, lowest temp of the next 14 hourly forecasts < 5 °C | Phone notification |
+| **Geranium - can go outside again** | Daily 09:00 | `geranium_outside` is `off`, month is April or May, lowest daily low of next 5 days ≥ 8 °C | Phone notification |
+
+Time conditions such as `after: '23:59:00'` / `before: '05:00:00'` wrap past midnight automatically.
+
+### Example: bedtime charging automation
 
 ```yaml
-alias: Light Automation Test
-description: Set Bedroom bulbs to warm 21% brightness when S24 Ultra starts charging at night
-triggers:
+- id: '1792951025131'
+  alias: Light Automation Test
+  description: Turns on the Sleepy scene when I plug in my phone at night while I'm home.
+  triggers:
   - trigger: state
-    entity_id:
-      - sensor.my_s24ultra_battery_state
-    to:
-      - charging
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 10
-conditions:
+    entity_id: sensor.my_s24ultra_battery_state
+    from: discharging
+    to: charging
+    for: 00:00:10
+  conditions:
   - condition: time
-    after: "18:00:00"
-    before: "05:00:00"
-actions:
-  - action: light.turn_on
-    metadata: {}
+    after: '23:59:00'
+    before: 05:00:00
+  - condition: state
+    entity_id: person.skander_chouba
+    state: home
+  actions:
+  - action: scene.turn_on
     target:
-      area_id: bedroom
-    data:
-      color_temp_kelvin: 2563
-      brightness_pct: 21
-mode: single
+      entity_id: scene.sleepy
+  mode: single
 ```
+
+### Example: forecast-based notification (Geranium)
+
+```yaml
+  actions:
+  - action: weather.get_forecasts
+    target:
+      entity_id: weather.forecast_home
+    data:
+      type: hourly
+    response_variable: forecast
+  - variables:
+      night_low: "{{ forecast['weather.forecast_home'].forecast[:14] | map(attribute='temperature') | select('number') | min }}"
+  - condition: template
+    value_template: '{{ night_low | float(99) < 5 }}'
+  - action: notify.mobile_app_my_s24ultra
+    data:
+      title: Geranium
+      message: Tonight's low is {{ night_low | round(0) | int }} °C. Move the geranium inside.
+```
+
+Toggle **Geranium outside** whenever the plant is moved, otherwise the reminders stop matching.
 
 ---
 
-## 🛠️ 7. Troubleshooting & Lessons Learned
+## 📁 7. Repository Layout
+
+```
+docker-compose.yml               # Home Assistant container
+config/configuration.yaml        # Includes automations, scripts, scenes
+config/automations.yaml          # Automations (section 6)
+config/scenes.yaml               # Scenes (section 5)
+config/scripts.yaml              # Empty
+domeassistantsetupgemini.txt     # Setup command notes
+```
+
+Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitignore`.
+
+---
+
+## 🛠️ 8. Troubleshooting & Lessons Learned
 
 | Issue | Root Cause | Solution |
 | :--- | :--- | :--- |
 | **Phone app fails with `ERR_CONNECTION_ABORTED` on `192.168.0.164:8123`** | Host firewall (`ufw`) or active **NordVPN** tunnel dropping local LAN HTTP requests. | Run `sudo ufw allow 8123/tcp` and `nordvpn whitelist add subnet 192.168.0.0/24` (or disconnect NordVPN). |
 | **Automation error: `two or more values in the same group of exclusion 'brightness'`** | Both `brightness_pct` (absolute %) and `brightness_step_pct` (relative step %) were selected in `light.turn_on`. | Only use **`brightness_pct`** (e.g., `21`) and uncheck `brightness_step_pct`. |
-| **Charging trigger didn't fire automatically when plugging in phone** | Trigger was filtering for `from: not_charging` to `charging`, but Android reports **`discharging`** when unplugged. | Leave the **`from:`** field blank (or set to `discharging`) and only require **`to: charging`**. |
+| **Charging trigger didn't fire automatically when plugging in phone** | Trigger was filtering for `from: not_charging` to `charging`, but Android reports **`discharging`** when unplugged. | Set **`from:`** to `discharging` (current setup) or leave it blank. Blank also covers plugging in from `full` / `not_charging`. |
+| **Using the PC doesn't keep the lights on** | `binary_sensor.user_active` also checks `binary_sensor.computer_active`, which does not exist yet (it always reads as `off`). | Only phone activity counts for now; create a computer activity sensor with that entity ID to include the PC. |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |

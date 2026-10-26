@@ -1,28 +1,139 @@
 - id: '1792951025131'
   alias: Light Automation Test
-  description: ''
+  description: Turns on the Sleepy scene when I plug in my phone at night while I'm
+    home.
   triggers:
   - trigger: state
-    entity_id:
-    - sensor.my_s24ultra_battery_state
-    from:
-    - discharging
-    to:
-    - charging
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 10
+    entity_id: sensor.my_s24ultra_battery_state
+    from: discharging
+    to: charging
+    for: 00:00:10
   conditions:
   - condition: time
     after: '23:59:00'
     before: 05:00:00
+  - condition: state
+    entity_id: person.skander_chouba
+    state: home
   actions:
-  - action: light.turn_on
-    metadata: {}
+  - action: scene.turn_on
+    target:
+      entity_id: scene.sleepy
+  mode: single
+- id: '1792960986777'
+  alias: Coming home after Sunset
+  description: Triggers Cool Bright scene when I arrive home after sunset.
+  triggers:
+  - trigger: state
+    entity_id: person.skander_chouba
+    to: home
+  conditions:
+  - condition: or
+    conditions:
+    - condition: sun
+      after: sunset
+    - condition: sun
+      before: sunrise
+  actions:
+  - action: scene.turn_on
+    target:
+      entity_id: scene.cool_bright
+  mode: single
+- id: '1792963078456'
+  alias: Leaving home - bedroom lights off
+  description: Turns off the bedroom lights when I leave home.
+  triggers:
+  - trigger: state
+    entity_id: person.skander_chouba
+    to: not_home
+    for: 00:02:00
+  actions:
+  - action: light.turn_off
     target:
       area_id: bedroom
+  mode: single
+- id: '1792973711536'
+  alias: Sleep detected - lights off
+  description: Turns off all lights when I haven't used phone or computer for 15 minutes
+    and the phone says I'm asleep.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.user_active
+    to: 'off'
+    for: 00:15:00
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.my_s24ultra_sleep_confidence
+    above: 80
+  - condition: state
+    entity_id: person.skander_chouba
+    state: home
+  - condition: time
+    after: '22:00:00'
+    before: '10:00:00'
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id: all
+  mode: single
+- id: '1793022926539'
+  alias: Geranium - move inside tonight
+  description: Evening warning when tonight's forecast gets cold.
+  triggers:
+  - trigger: time
+    at: '18:00:00'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.geranium_outside
+    state: 'on'
+  actions:
+  - action: weather.get_forecasts
+    target:
+      entity_id: weather.forecast_home
     data:
-      color_temp_kelvin: 2563
-      brightness_pct: 21
+      type: hourly
+    response_variable: forecast
+  - variables:
+      night_low: '{{ forecast[''weather.forecast_home''].forecast[:14] | map(attribute=''temperature'')
+        | select(''number'') | min }}
+
+        '
+  - condition: template
+    value_template: '{{ night_low | float(99) < 5 }}'
+  - action: notify.mobile_app_my_s24ultra
+    data:
+      title: Geranium
+      message: Tonight's low is {{ night_low | round(0) | int }} °C. Move the geranium
+        inside.
+  mode: single
+- id: '1793023005877'
+  alias: Geranium - can go outside again
+  description: Spring notice when the next nights stay mild.
+  triggers:
+  - trigger: time
+    at: 09:00:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.geranium_outside
+    state: 'off'
+  - condition: template
+    value_template: '{{ now().month in [4, 5] }}'
+  actions:
+  - action: weather.get_forecasts
+    target:
+      entity_id: weather.forecast_home
+    data:
+      type: daily
+    response_variable: forecast
+  - variables:
+      lowest: '{{ forecast[''weather.forecast_home''].forecast[:5] | map(attribute=''templow'')
+        | select(''number'') | min }}
+
+        '
+  - condition: template
+    value_template: '{{ lowest | float(-99) >= 8 }}'
+  - action: notify.mobile_app_my_s24ultra
+    data:
+      title: Geranium
+      message: The next 5 nights stay above 8 °C. You can move the geranium outside.
   mode: single
