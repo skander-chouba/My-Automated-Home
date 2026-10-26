@@ -1,6 +1,6 @@
 # 🏠 Local Smart Home & Home Assistant Setup (Ubuntu + Docker + BLE)
 
-Complete documentation for deploying a local, cloud-free **Home Assistant** instance in Docker on Ubuntu, passing through the onboard Intel Bluetooth controller (`hci0`) to control **Philips Hue Bluetooth (BLE)** bulbs (`Bulb 1` & `Bulb 2`), and integrating the **Samsung Galaxy S24 Ultra** (`my S24Ultra`) for automated state triggers.
+Complete documentation for a local **Home Assistant** instance in Docker on Ubuntu: it passes through the onboard Intel Bluetooth controller (`hci0`) to control **Philips Hue Bluetooth (BLE)** bulbs (`Bulb 1` & `Bulb 2`), uses the **Samsung Galaxy S24 Ultra** (`my S24Ultra`) and the Ubuntu desktop for presence, activity and sleep triggers, and shows everything on a custom **Home** dashboard with **Google Calendar**. Lights and automations run locally; only the weather forecast and Google Calendar need the internet.
 
 ---
 
@@ -13,6 +13,9 @@ Complete documentation for deploying a local, cloud-free **Home Assistant** inst
 * **Home Assistant version:** 2026.10.4 (`stable` image)
 * **Wearable:** Galaxy Watch8 registered through the Companion App
 * **Mobile Device & Sensor Hub:** Samsung Galaxy S24 Ultra (`my S24Ultra`) running the official Home Assistant Companion App
+* **Remote access:** Tailscale (the phone reaches `:8123` over the tailnet away from home)
+* **Cloud services:** Met.no weather (`weather.forecast_home`), Google Calendar (section 8)
+* **Frontend add-ons:** HACS with Mushroom and card-mod (section 8)
 
 ---
 
@@ -102,6 +105,9 @@ Access the web UI at **`http://localhost:8123`** (or **`http://192.168.0.164:812
 ### C. Philips Hue Bluetooth Bulbs (`Bulb 1` & `Bulb 2`)
 1. Open the **Philips Hue** app on the phone $\rightarrow$ **Settings** $\rightarrow$ **Voice Assistants** $\rightarrow$ **Amazon Alexa** $\rightarrow$ tap **Make Discoverable** (puts the bulbs into BLE pairing mode).
 2. Pair the bulbs in Home Assistant under **Settings** $\rightarrow$ **Devices & services** $\rightarrow$ **+ Add integration** $\rightarrow$ **Philips Hue BLE** (and assign them to the **Bedroom** area as `Bulb 1` and `Bulb 2`).
+
+### D. HACS, Google Calendar & Dashboard
+See section 8: HACS (Mushroom, card-mod), the Google Calendar integration and the **Home** dashboard.
 
 ---
 
@@ -297,4 +303,9 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 | **Sleep automation never fires** | `binary_sensor.computer_active` stuck at `on` because the old reporter script stopped without sending `off`. | The current `host/ha-idle.sh` sends `off` on stop and when no GNOME session is found. Check it with `systemctl --user status ha-idle`. |
 | **`binary_sensor.computer_active` missing from Settings → Entities** | It is set through the REST API, so it has no registry entry and disappears after an HA restart until the next report (≤ 30 s). | Expected; it still works in templates and automations. |
 | **Dashboard card shows `Custom element doesn't exist: mushroom-…`** | Mushroom not installed, or the browser cached the old frontend. | Download Mushroom in HACS, restart HA, then hard-refresh the page (Ctrl+Shift+R). |
+| **HACS install fails with `wget: bad address 'get.hacs.xyz'`** | Temporary DNS failure inside the container (HA logs showed similar DNS timeouts for Met.no). | Run the install command again; check the host with `getent hosts get.hacs.xyz`. |
+| **`Permission denied` editing `config/configuration.yaml`** | Files created by the container are owned by `root`. | Edit with `sudo` (e.g. `sudo nano config/configuration.yaml`), then restart HA. |
+| **Google Cloud shows "Branding verification issues" for `home-assistant.io`** | Google can't verify a domain you don't own. Only matters for apps used by other people. | Cancel and ignore it. Accept the "unverified app" warning during sign-in (**Advanced → Go to Home Assistant (unsafe)**). |
+| **Google Calendar credentials saved but no `calendar.*` entities** | The account-linking flow was closed before Home Assistant showed **Success!**. | Add the **Google Calendar** integration again; the saved credentials are reused. Wait for **Success!** before closing anything. |
+| **Google Calendar stops syncing after 7 days** | The Google Cloud app is still in **Testing**. | **Google Auth Platform → Audience → Publish app**, then re-authenticate in HA. |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |
