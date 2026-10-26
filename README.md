@@ -154,7 +154,7 @@ All automations live in `config/automations.yaml` (managed by the UI editor). En
 | Automation | Trigger | Conditions | Action |
 | :--- | :--- | :--- | :--- |
 | **Light Automation Test** (bedtime charging) | Phone battery state `discharging` → `charging` for 10 s | 23:59–05:00, person `home` | Scene `Sleepy` |
-| **Coming home after Sunset** | Person → `home` | After sunset or before sunrise | Scene `Cool Bright` |
+| **Coming home after Sunset** | Person `not_home` → `home` | After sunset or before sunrise | Scene `Cool Bright` |
 | **Leaving home - bedroom lights off** | Person → `not_home` for 2 min | — | Turn off area `bedroom` |
 | **Sleep detected - lights off** | `binary_sensor.user_active` → `off` for 15 min | Sleep confidence > 80, person `home`, 22:00–10:00 | Turn off all lights |
 | **Geranium - move inside tonight** | Daily 18:00 | `geranium_outside` is `on`, lowest temp of the next 14 hourly forecasts < 5 °C | Phone notification |
@@ -308,4 +308,5 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 | **Google Cloud shows "Branding verification issues" for `home-assistant.io`** | Google can't verify a domain you don't own. Only matters for apps used by other people. | Cancel and ignore it. Accept the "unverified app" warning during sign-in (**Advanced → Go to Home Assistant (unsafe)**). |
 | **Google Calendar credentials saved but no `calendar.*` entities** | The account-linking flow was closed before Home Assistant showed **Success!**. | Add the **Google Calendar** integration again; the saved credentials are reused. Wait for **Success!** before closing anything. |
 | **Google Calendar stops syncing after 7 days** | The Google Cloud app is still in **Testing**. | **Google Auth Platform → Audience → Publish app**, then re-authenticate in HA. |
+| **Cool Bright turns on while already home** | The phone's tracker briefly went `unavailable`, so the person went `unknown` → `home`, which looked like an arrival. | The trigger now requires `from: not_home`, so only real arrivals count. |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |

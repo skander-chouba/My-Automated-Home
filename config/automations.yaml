@@ -27,6 +27,7 @@
   - trigger: state
     entity_id: person.skander_chouba
     to: home
+    from: not_home
   conditions:
   - condition: or
     conditions:
