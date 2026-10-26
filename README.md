@@ -231,7 +231,44 @@ Toggle **Geranium outside** whenever the plant is moved, otherwise the reminders
 
 ---
 
-## 📁 8. Repository Layout
+## 📊 8. Home Dashboard
+
+A dark "glass" dashboard (**Home** in the sidebar, `http://localhost:8123/dashboard-home`) built with Lovelace, [Mushroom](https://github.com/piitaya/lovelace-mushroom) and [card-mod](https://github.com/thomasloven/lovelace-card-mod). It shows a greeting with chips (clock, weather, home/away, activity, phone battery, next calendar event), scene quick actions, room cards that switch all lights in each area, the weather forecast, a week agenda from Google Calendar, phone/computer activity and sleep status, the geranium toggle and switches for every automation.
+
+| File | Purpose |
+| :--- | :--- |
+| `config/dashboards/home.yaml` | The dashboard (YAML mode: edit the file, then refresh the page) |
+| `config/themes/glass-dark.yaml` | Theme: dark gradient, frosted cards, amber accent |
+| `config/configuration.yaml` | Registers the dashboard and loads card-mod globally |
+
+### Setup
+
+1. Install HACS inside the container, then restart:
+   ```bash
+   docker exec -it homeassistant bash -c "wget -O - https://get.hacs.xyz | bash -"
+   docker restart homeassistant
+   ```
+2. **Settings** → **Devices & services** → **+ Add integration** → **HACS**, and sign in with GitHub when asked.
+3. In **HACS**, search for and download **Mushroom** and **card-mod**, then restart Home Assistant.
+4. **Profile** → **Theme** → `glass-dark`.
+
+HACS files go to `config/custom_components/` and `config/www/community/`, which are git-ignored.
+
+### Google Calendar
+
+The calendar section uses the official **Google Calendar** integration (read and write). Setup, from the [integration docs](https://www.home-assistant.io/integrations/google/):
+
+1. In [Google Cloud Console](https://console.cloud.google.com/): create a project and enable the **Google Calendar API**.
+2. **Google Auth Platform → Branding**: app name, support email, audience **External**. The "branding verification" warning can be ignored for personal use.
+3. **Audience → Publish app** (otherwise the login expires every 7 days).
+4. **Clients → Create client → Web application**, redirect URI `https://my.home-assistant.io/redirect/oauth`. Copy the Client ID and secret.
+5. In HA: **Settings → Devices & services → + Add integration → Google Calendar**, paste the credentials, sign in (**Advanced → Go to Home Assistant (unsafe)** on the unverified-app warning), and set `http://localhost:8123` as the instance URL on my.home-assistant.io.
+
+Each Google calendar becomes a `calendar.*` entity (`calendar.skander_chouba_gmail_com`, `calendar.family`, `calendar.birthdays`, holidays, …).
+
+---
+
+## 📁 9. Repository Layout
 
 ```
 docker-compose.yml               # Home Assistant container
@@ -241,6 +278,8 @@ config/scenes.yaml               # Scenes (section 5)
 config/scripts.yaml              # Empty
 host/ha-idle.sh                  # Computer activity reporter (section 7)
 host/ha-idle.service             # systemd user unit for it
+config/dashboards/home.yaml      # Home dashboard (section 8)
+config/themes/glass-dark.yaml    # Dashboard theme
 domeassistantsetupgemini.txt     # Setup command notes
 ```
 
@@ -248,7 +287,7 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 
 ---
 
-## 🛠️ 9. Troubleshooting & Lessons Learned
+## 🛠️ 10. Troubleshooting & Lessons Learned
 
 | Issue | Root Cause | Solution |
 | :--- | :--- | :--- |
@@ -257,4 +296,5 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 | **Charging trigger didn't fire automatically when plugging in phone** | Trigger was filtering for `from: not_charging` to `charging`, but Android reports **`discharging`** when unplugged. | Set **`from:`** to `discharging` (current setup) or leave it blank. Blank also covers plugging in from `full` / `not_charging`. |
 | **Sleep automation never fires** | `binary_sensor.computer_active` stuck at `on` because the old reporter script stopped without sending `off`. | The current `host/ha-idle.sh` sends `off` on stop and when no GNOME session is found. Check it with `systemctl --user status ha-idle`. |
 | **`binary_sensor.computer_active` missing from Settings → Entities** | It is set through the REST API, so it has no registry entry and disappears after an HA restart until the next report (≤ 30 s). | Expected; it still works in templates and automations. |
+| **Dashboard card shows `Custom element doesn't exist: mushroom-…`** | Mushroom not installed, or the browser cached the old frontend. | Download Mushroom in HACS, restart HA, then hard-refresh the page (Ctrl+Shift+R). |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |

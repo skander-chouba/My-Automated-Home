@@ -1,0 +1,51 @@
+# Dark "glass" theme for the Home dashboard. Select it under Profile -> Theme.
+# The card-mod-* keys need card-mod loaded via frontend.extra_module_url.
+glass-dark:
+  # Background and surfaces
+  primary-background-color: "#0b0f17"
+  secondary-background-color: "#121826"
+  lovelace-background: "radial-gradient(circle at 15% 0%, #3a2a12 0%, transparent 45%), radial-gradient(circle at 100% 100%, #10302a 0%, transparent 40%), #0b0f17 fixed"
+  card-background-color: "#141a26"
+  ha-card-background: "rgba(255, 255, 255, 0.045)"
+  ha-card-border-radius: "24px"
+  ha-card-border-color: "rgba(255, 255, 255, 0.08)"
+  ha-card-border-width: "1px"
+  ha-card-box-shadow: "0 8px 24px rgba(0, 0, 0, 0.35)"
+  app-header-background-color: "transparent"
+  app-header-text-color: "#f2f3f5"
+  sidebar-background-color: "#0b0f17"
+  divider-color: "rgba(255, 255, 255, 0.08)"
+
+  # Text
+  primary-text-color: "#f2f3f5"
+  secondary-text-color: "#9aa3b2"
+  disabled-text-color: "#5c6473"
+
+  # Accents: amber for "on", teal for OK states
+  primary-color: "#f5b83d"
+  accent-color: "#f5b83d"
+  state-icon-color: "#9aa3b2"
+  state-active-color: "#f5b83d"
+  state-light-on-color: "#f5b83d"
+  state-binary_sensor-active-color: "#3ddc97"
+  success-color: "#3ddc97"
+  warning-color: "#f5b83d"
+  error-color: "#ff6b6b"
+
+  # Mushroom
+  mush-card-primary-font-size: "15px"
+  mush-card-secondary-font-size: "13px"
+  mush-chip-background: "rgba(255, 255, 255, 0.06)"
+  mush-chip-border-color: "rgba(255, 255, 255, 0.08)"
+  mush-chip-height: "40px"
+  mush-chip-border-radius: "20px"
+  mush-shape-icon-border-radius: "14px"
+  mush-control-border-radius: "14px"
+
+  # card-mod: frosted glass on every card
+  card-mod-theme: glass-dark
+  card-mod-card: |
+    ha-card {
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
