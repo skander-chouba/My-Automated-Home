@@ -154,7 +154,7 @@ All automations live in `config/automations.yaml` (managed by the UI editor). En
 | Automation | Trigger | Conditions | Action |
 | :--- | :--- | :--- | :--- |
 | **Light Automation Test** (bedtime charging) | Phone battery state `discharging` → `charging` for 10 s | 23:59–05:00, person `home` | Scene `Sleepy` |
-| **Coming home after Sunset** | Person `not_home` → `home` | After sunset or before sunrise | Scene `Cool Bright` |
+| **Coming home after Sunset** | Person `not_home` → `home` | Was away at least 5 min, after sunset or before sunrise | Scene `Cool Bright` |
 | **Leaving home - bedroom lights off** | Person → `not_home` for 2 min | — | Turn off area `bedroom` |
 | **Sleep detected - lights off** | `binary_sensor.user_active` → `off` for 15 min | Sleep confidence > 80, person `home`, 22:00–10:00 | Turn off all lights |
 | **Geranium - move inside tonight** | Daily 18:00 | `geranium_outside` is `on`, lowest temp of the next 14 hourly forecasts < 5 °C | Phone notification |
@@ -218,7 +218,7 @@ Toggle **Geranium outside** whenever the plant is moved, otherwise the reminders
 
 `host/ha-idle.sh` runs as a systemd user service. Every 30 s it reads GNOME's idle time (`org.gnome.Mutter.IdleMonitor`, works on Wayland) and posts to `/api/states/binary_sensor.computer_active`:
 
-* `on`: keyboard or mouse input within the last 2 minutes (`idle_seconds` attribute shows the idle time)
+* `on`: keyboard or mouse input in two polls in a row (about 30 s of real use); stays `on` until 2 minutes without input. A single stray event (e.g. a wireless mouse waking at night) doesn't count. The `idle_seconds` attribute shows the idle time.
 * `off`: idle for 2+ minutes, no GNOME session, or the service stopped
 
 ### Install
@@ -309,4 +309,6 @@ Secrets, `.storage/`, the database, logs and blueprints are excluded via `.gitig
 | **Google Calendar credentials saved but no `calendar.*` entities** | The account-linking flow was closed before Home Assistant showed **Success!**. | Add the **Google Calendar** integration again; the saved credentials are reused. Wait for **Success!** before closing anything. |
 | **Google Calendar stops syncing after 7 days** | The Google Cloud app is still in **Testing**. | **Google Auth Platform → Audience → Publish app**, then re-authenticate in HA. |
 | **Cool Bright turns on while already home** | The phone's tracker briefly went `unavailable`, so the person went `unknown` → `home`, which looked like an arrival. | The trigger now requires `from: not_home`, so only real arrivals count. |
+| **Cool Bright turns on at night after a short GPS jump** | Indoors the phone sent a rough fix (±100 m) outside the 100 m home zone for 34 s, then came back `home`. | The automation now requires being away at least 5 minutes. Optionally enlarge the home zone (**Settings → Areas, labels & zones → Home**). |
+| **`computer_active` turns on every ~30 min at night** | A single input event (likely a wireless Razer device) resets GNOME's idle timer while you sleep. | `ha-idle.sh` now needs input in two polls in a row before reporting `on`. |
 | **GitHub CLI / `git clone` password authentication error** | GitHub deprecated account passwords for Git HTTPS operations. | Authenticate via GitHub CLI (`sudo apt install gh && gh auth login`). |

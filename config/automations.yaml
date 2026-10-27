@@ -29,6 +29,9 @@
     to: home
     from: not_home
   conditions:
+  - condition: template
+    value_template: '{{ now() - trigger.from_state.last_changed > timedelta(minutes=5)
+      }}'
   - condition: or
     conditions:
     - condition: sun
