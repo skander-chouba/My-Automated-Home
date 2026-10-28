@@ -1,327 +1,454 @@
-# Home dashboard (YAML mode). Needs Mushroom + card-mod from HACS and the glass-dark theme.
+# Home dashboard seed/backup. The live dashboard is UI-managed (stored in .storage/lovelace.dashboard_home);
+# paste this into Edit -> ⋮ -> Raw configuration editor to restore it. Needs Mushroom + card-mod (HACS) and glass-dark.
 title: Home
 views:
-  - title: Home
-    path: home
-    icon: mdi:home
-    type: sections
-    max_columns: 3
-    sections:
-      # ---------------------------------------------------------------- Header
-      - column_span: 3
-        cards:
-          - type: custom:mushroom-title-card
-            title: >-
-              {% set h = now().hour %}
-              {% if h < 5 %}Good night{% elif h < 12 %}Good morning{% elif h < 18 %}Good afternoon{% else %}Good evening{% endif %},
-              {{ (state_attr('person.skander_chouba', 'friendly_name') or 'there').split(' ')[0] }}
-            subtitle: "{{ now().strftime('%A, %-d %B') }}"
-            grid_options:
-              columns: full
-          - type: custom:mushroom-chips-card
-            alignment: start
-            chips:
-              - type: template
-                icon: mdi:clock-outline
-                content: "{{ now().strftime('%H:%M') }}"
-              - type: weather
-                entity: weather.forecast_home
-                show_conditions: true
-                show_temperature: true
-              - type: template
-                entity: person.skander_chouba
-                icon: "{{ 'mdi:home-account' if is_state('person.skander_chouba', 'home') else 'mdi:account-arrow-right' }}"
-                icon_color: "{{ 'green' if is_state('person.skander_chouba', 'home') else 'grey' }}"
-                content: "{{ 'Home' if is_state('person.skander_chouba', 'home') else 'Away' }}"
-              - type: template
-                entity: binary_sensor.user_active
-                icon: "{{ 'mdi:account-check' if is_state('binary_sensor.user_active', 'on') else 'mdi:sleep' }}"
-                icon_color: "{{ 'green' if is_state('binary_sensor.user_active', 'on') else 'indigo' }}"
-                content: "{{ 'Active' if is_state('binary_sensor.user_active', 'on') else 'Idle' }}"
-              - type: template
-                entity: sensor.my_s24ultra_battery_level
-                icon: >-
-                  {% if is_state('sensor.my_s24ultra_battery_state', 'charging') %}mdi:battery-charging
-                  {% else %}mdi:cellphone{% endif %}
-                icon_color: >-
-                  {% set b = states('sensor.my_s24ultra_battery_level') | int(0) %}
-                  {{ 'red' if b < 20 else 'amber' if b < 50 else 'green' }}
-                content: "{{ states('sensor.my_s24ultra_battery_level') }}%"
-              - type: template
-                entity: calendar.skander_chouba_gmail_com
-                icon: mdi:calendar-clock
-                icon_color: "{{ 'amber' if is_state('calendar.skander_chouba_gmail_com', 'on') else 'blue' }}"
-                content: >-
-                  {% set c = 'calendar.skander_chouba_gmail_com' %}
-                  {% set s = state_attr(c, 'start_time') %}
-                  {% if is_state(c, 'on') %}Now: {{ state_attr(c, 'message') }}
-                  {% elif s %}{{ state_attr(c, 'message') }} · {{ (s | as_datetime).strftime('%a %H:%M') }}
-                  {% else %}No upcoming events{% endif %}
-            grid_options:
-              columns: full
-
-      # --------------------------------------------------------- Quick actions
-      - cards:
-          - type: heading
-            heading: Quick actions
-            heading_style: subtitle
-          - type: custom:mushroom-template-card
-            entity: scene.cool_bright
-            primary: Cool Bright
-            secondary: 4000 K · 100%
-            icon: mdi:white-balance-sunny
-            icon_color: light-blue
-            layout: vertical
-            tap_action: &scene_tap
-              action: perform-action
-              perform_action: scene.turn_on
-              target:
-                entity_id: scene.cool_bright
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: scene.energize
-            primary: Energize
-            secondary: 6410 K · 100%
-            icon: mdi:lightning-bolt
-            icon_color: cyan
-            layout: vertical
-            tap_action:
-              <<: *scene_tap
-              target:
-                entity_id: scene.energize
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: scene.storybook
-            primary: Storybook
-            secondary: 2702 K · 70%
-            icon: mdi:book-open-blank-variant
-            icon_color: amber
-            layout: vertical
-            tap_action:
-              <<: *scene_tap
-              target:
-                entity_id: scene.storybook
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: scene.sleepy
-            primary: Sleepy
-            secondary: 2000 K · 25%
-            icon: mdi:sleep
-            icon_color: deep-orange
-            layout: vertical
-            tap_action:
-              <<: *scene_tap
-              target:
-                entity_id: scene.sleepy
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            primary: All lights off
-            secondary: >-
-              {% set on = area_entities('bedroom') | select('match', 'light.') | select('is_state', 'on') | list | count %}
-              {{ on }} on in Bedroom
-            icon: mdi:lightbulb-group-off
-            icon_color: "{{ 'amber' if area_entities('bedroom') | select('match', 'light.') | select('is_state', 'on') | list else 'grey' }}"
-            tap_action:
-              action: perform-action
-              perform_action: light.turn_off
-              target:
-                area_id: bedroom
-            grid_options: { columns: full }
-
-      # ----------------------------------------------------------------- Rooms
-      # Built-in area cards: the bulb button switches every light in the area
-      # (all off if any is on), tapping the card opens the area page.
-      # The card glows amber while any light in the area is on.
-      - cards:
-          - type: heading
-            heading: Rooms
-            heading_style: subtitle
-          - type: area
-            area: bedroom
-            display_type: compact
-            features:
-              - type: area-controls
-                controls: [light]
-            features_position: inline
-            card_mod:
-              style: |
-                ha-card {
-                  {% if area_entities('bedroom') | select('match', 'light.') | select('is_state', 'on') | list %}
-                  border-color: rgba(245, 184, 61, 0.55) !important;
-                  box-shadow: 0 0 28px rgba(245, 184, 61, 0.25) !important;
-                  background: rgba(245, 184, 61, 0.08) !important;
-                  {% endif %}
-                }
-            grid_options: { columns: full }
-          - type: area
-            area: living_room
-            display_type: compact
-            features:
-              - type: area-controls
-                controls: [light]
-            features_position: inline
-            card_mod:
-              style: |
-                ha-card {
-                  {% if area_entities('living_room') | select('match', 'light.') | select('is_state', 'on') | list %}
-                  border-color: rgba(245, 184, 61, 0.55) !important;
-                  box-shadow: 0 0 28px rgba(245, 184, 61, 0.25) !important;
-                  background: rgba(245, 184, 61, 0.08) !important;
-                  {% endif %}
-                }
-            grid_options: { columns: full }
-          - type: area
-            area: kitchen
-            display_type: compact
-            features:
-              - type: area-controls
-                controls: [light]
-            features_position: inline
-            card_mod:
-              style: |
-                ha-card {
-                  {% if area_entities('kitchen') | select('match', 'light.') | select('is_state', 'on') | list %}
-                  border-color: rgba(245, 184, 61, 0.55) !important;
-                  box-shadow: 0 0 28px rgba(245, 184, 61, 0.25) !important;
-                  background: rgba(245, 184, 61, 0.08) !important;
-                  {% endif %}
-                }
-            grid_options: { columns: full }
-          - type: area
-            area: terrasse
-            display_type: compact
-            features:
-              - type: area-controls
-                controls: [light]
-            features_position: inline
-            card_mod:
-              style: |
-                ha-card {
-                  {% if area_entities('terrasse') | select('match', 'light.') | select('is_state', 'on') | list %}
-                  border-color: rgba(245, 184, 61, 0.55) !important;
-                  box-shadow: 0 0 28px rgba(245, 184, 61, 0.25) !important;
-                  background: rgba(245, 184, 61, 0.08) !important;
-                  {% endif %}
-                }
-            grid_options: { columns: full }
-
-      # --------------------------------------------------------------- Weather
-      - cards:
-          - type: heading
-            heading: Weather
-            heading_style: subtitle
-          - type: weather-forecast
-            entity: weather.forecast_home
-            forecast_type: daily
-            show_current: true
-            show_forecast: true
-            grid_options: { columns: full }
-          - type: custom:mushroom-template-card
-            entity: sensor.sun_next_setting
-            primary: "Sunset {{ as_timestamp(states('sensor.sun_next_setting')) | timestamp_custom('%H:%M') }}"
-            secondary: "Sunrise {{ as_timestamp(states('sensor.sun_next_rising')) | timestamp_custom('%H:%M') }}"
-            icon: mdi:weather-sunset
-            icon_color: orange
-            grid_options: { columns: full }
-
-      # -------------------------------------------------------------- Calendar
-      - cards:
-          - type: heading
-            heading: Calendar
-            heading_style: subtitle
-          - type: calendar
-            initial_view: listWeek
-            entities:
-              - calendar.skander_chouba_gmail_com
-              - calendar.family
-              - calendar.family_2
-              - calendar.birthdays
-              - calendar.holidays_in_germany
-              - calendar.holidays_in_tunisia
-            grid_options: { columns: full }
-
-      # ------------------------------------------------------ Activity & sleep
-      - cards:
-          - type: heading
-            heading: Activity & sleep
-            heading_style: subtitle
-          - type: custom:mushroom-template-card
-            entity: binary_sensor.my_s24ultra_interactive
-            primary: Phone
-            secondary: "{{ 'In use' if is_state('binary_sensor.my_s24ultra_interactive', 'on') else 'Screen off' }}"
-            icon: mdi:cellphone
-            icon_color: "{{ 'green' if is_state('binary_sensor.my_s24ultra_interactive', 'on') else 'grey' }}"
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: binary_sensor.computer_active
-            primary: Computer
-            secondary: >-
-              {% set idle = state_attr('binary_sensor.computer_active', 'idle_seconds') | int(-1) %}
-              {% if is_state('binary_sensor.computer_active', 'on') %}In use
-              {% elif idle < 0 %}Not reporting
-              {% else %}Idle {{ (idle / 60) | round(0) | int }} min{% endif %}
-            icon: mdi:monitor
-            icon_color: "{{ 'green' if is_state('binary_sensor.computer_active', 'on') else 'grey' }}"
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: sensor.my_s24ultra_sleep_confidence
-            primary: Sleep confidence
-            secondary: "{{ states('sensor.my_s24ultra_sleep_confidence') }}%"
-            icon: mdi:power-sleep
-            icon_color: "{{ 'indigo' if states('sensor.my_s24ultra_sleep_confidence') | int(0) > 80 else 'grey' }}"
-            grid_options: { columns: 6 }
-          - type: custom:mushroom-template-card
-            entity: sensor.galaxy_watch8_5r3y_battery_level
-            primary: Watch
-            secondary: "{{ states('sensor.galaxy_watch8_5r3y_battery_level') }}% battery"
-            icon: mdi:watch
-            icon_color: "{{ 'red' if states('sensor.galaxy_watch8_5r3y_battery_level') | int(0) < 20 else 'green' }}"
-            grid_options: { columns: 6 }
-          - type: markdown
-            content: >-
-              {% if is_state('binary_sensor.user_active', 'on') %}
-              You're active, so the lights stay as they are.
-              {% else %}
-              No activity since {{ as_timestamp(states.binary_sensor.user_active.last_changed) | timestamp_custom('%H:%M') }}.
+- title: Home
+  path: home
+  icon: mdi:home
+  type: sections
+  max_columns: 3
+  sections:
+  - column_span: 3
+    cards:
+    - type: custom:mushroom-title-card
+      title: '{% set h = now().hour %} {% if h < 5 %}Good night{% elif h < 12 %}Good morning{% elif h < 18 %}Good afternoon{% else %}Good evening{% endif %}, {{ (state_attr(''person.skander_chouba'', ''friendly_name'')
+        or ''there'').split('' '')[0] }}'
+      subtitle: '{{ now().strftime(''%A, %-d %B'') }}'
+      grid_options:
+        columns: full
+    - type: custom:mushroom-chips-card
+      alignment: start
+      chips:
+      - type: template
+        icon: mdi:clock-outline
+        content: '{{ now().strftime(''%H:%M'') }}'
+      - type: weather
+        entity: weather.forecast_home
+        show_conditions: true
+        show_temperature: true
+      - type: template
+        entity: person.skander_chouba
+        icon: '{{ ''mdi:home-account'' if is_state(''person.skander_chouba'', ''home'') else ''mdi:account-arrow-right'' }}'
+        icon_color: '{{ ''green'' if is_state(''person.skander_chouba'', ''home'') else ''grey'' }}'
+        content: '{{ ''Home'' if is_state(''person.skander_chouba'', ''home'') else ''Away'' }}'
+      - type: template
+        entity: binary_sensor.user_active
+        icon: '{{ ''mdi:account-check'' if is_state(''binary_sensor.user_active'', ''on'') else ''mdi:sleep'' }}'
+        icon_color: '{{ ''green'' if is_state(''binary_sensor.user_active'', ''on'') else ''indigo'' }}'
+        content: '{{ ''Active'' if is_state(''binary_sensor.user_active'', ''on'') else ''Idle'' }}'
+      - type: template
+        entity: sensor.my_s24ultra_battery_level
+        icon: '{% if is_state(''sensor.my_s24ultra_battery_state'', ''charging'') %}mdi:battery-charging {% else %}mdi:cellphone{% endif %}'
+        icon_color: '{% set b = states(''sensor.my_s24ultra_battery_level'') | int(0) %} {{ ''red'' if b < 20 else ''amber'' if b < 50 else ''green'' }}'
+        content: '{{ states(''sensor.my_s24ultra_battery_level'') }}%'
+      - type: template
+        entity: calendar.skander_chouba_gmail_com
+        icon: mdi:calendar-clock
+        icon_color: '{{ ''amber'' if is_state(''calendar.skander_chouba_gmail_com'', ''on'') else ''blue'' }}'
+        content: '{% set c = ''calendar.skander_chouba_gmail_com'' %} {% set s = state_attr(c, ''start_time'') %} {% if is_state(c, ''on'') %}Now: {{ state_attr(c, ''message'') }} {% elif s %}{{ state_attr(c,
+          ''message'') }} · {{ (s | as_datetime).strftime(''%a %H:%M'') }} {% else %}No upcoming events{% endif %}'
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Quick actions
+      heading_style: subtitle
+    - type: custom:mushroom-template-card
+      primary: All lights off
+      secondary: '{% set n = states.light | selectattr(''state'', ''eq'', ''on'') | list | count %}{{ n ~ '' on at home'' if n else ''Everything is off'' }}'
+      icon: mdi:lightbulb-group-off
+      icon_color: '{{ ''amber'' if states.light | selectattr(''state'', ''eq'', ''on'') | list | count else ''grey'' }}'
+      tap_action:
+        action: perform-action
+        perform_action: light.turn_off
+        target:
+          entity_id: all
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Rooms
+      heading_style: subtitle
+    - type: vertical-stack
+      cards:
+      - type: area
+        area: bedroom
+        display_type: compact
+        features:
+        - type: area-controls
+          controls:
+          - light
+        features_position: inline
+        card_mod:
+          style: |-
+            ha-card {
+              {# Tint the card with the average colour and brightness of the lights that are on #}
+              {% set ls = area_entities('bedroom') | select('match', 'light.') | select('is_state', 'on') | list %}
+              {% if ls %}
+              {% set ns = namespace(r=0, g=0, b=0, br=0) %}
+              {% for l in ls %}
+              {% set c = state_attr(l, 'rgb_color') or [245, 184, 61] %}
+              {% set ns.r = ns.r + c[0] %}{% set ns.g = ns.g + c[1] %}{% set ns.b = ns.b + c[2] %}
+              {% set ns.br = ns.br + (state_attr(l, 'brightness') or 255) %}
+              {% endfor %}
+              {% set n = ls | count %}
+              {% set rgb = [(ns.r / n) | int, (ns.g / n) | int, (ns.b / n) | int] | join(', ') %}
+              {% set k = 0.4 + 0.6 * ns.br / n / 255 %}
+              border-color: rgba({{ rgb }}, {{ (0.6 * k) | round(2) }}) !important;
+              box-shadow: 0 0 28px rgba({{ rgb }}, {{ (0.3 * k) | round(2) }}) !important;
+              background: rgba({{ rgb }}, {{ (0.1 * k) | round(2) }}) !important;
               {% endif %}
-              Lights turn off after 15 min without phone or computer use,
-              sleep confidence above 80 %, between 22:00 and 10:00.
-            grid_options: { columns: full }
-
-      # ---------------------------------------------------------------- Garden
-      - cards:
-          - type: heading
-            heading: Garden
-            heading_style: subtitle
-          - type: custom:mushroom-template-card
-            entity: input_boolean.geranium_outside
-            primary: Geranium
-            secondary: >-
-              {{ 'Outside' if is_state('input_boolean.geranium_outside', 'on') else 'Inside' }} · tap when you move it
-            icon: mdi:flower
-            icon_color: "{{ 'pink' if is_state('input_boolean.geranium_outside', 'on') else 'grey' }}"
-            tap_action:
-              action: toggle
-            grid_options: { columns: full }
-
-      # ----------------------------------------------------------- Automations
-      - cards:
-          - type: heading
-            heading: Automations
-            heading_style: subtitle
-          - type: entities
-            show_header_toggle: false
-            entities:
-              - entity: automation.bedroom_light_automation_sleep
-                name: Bedtime charging → Sleepy
-              - entity: automation.coming_home
-                name: Coming home after sunset
-              - entity: automation.leaving_home_bedroom_lights_off
-                name: Leaving home → lights off
-              - entity: automation.sleep_detected_lights_off
-                name: Sleep detected → lights off
-              - entity: automation.geranium_move_inside_tonight
-                name: Geranium cold warning
-              - entity: automation.geranium_can_go_outside_again
-                name: Geranium spring notice
-            grid_options: { columns: full }
+            }
+      - type: custom:mushroom-chips-card
+        alignment: end
+        chips:
+        - type: template
+          entity: scene.cool_bright
+          icon: mdi:white-balance-sunny
+          icon_color: light-blue
+          tap_action:
+            action: perform-action
+            perform_action: scene.turn_on
+            target:
+              entity_id: scene.cool_bright
+          hold_action:
+            action: more-info
+        - type: template
+          entity: scene.energize
+          icon: mdi:lightning-bolt
+          icon_color: cyan
+          tap_action:
+            action: perform-action
+            perform_action: scene.turn_on
+            target:
+              entity_id: scene.energize
+          hold_action:
+            action: more-info
+        - type: template
+          entity: scene.storybook
+          icon: mdi:book-open-blank-variant
+          icon_color: amber
+          tap_action:
+            action: perform-action
+            perform_action: scene.turn_on
+            target:
+              entity_id: scene.storybook
+          hold_action:
+            action: more-info
+        - type: template
+          entity: scene.sleepy
+          icon: mdi:sleep
+          icon_color: deep-orange
+          tap_action:
+            action: perform-action
+            perform_action: scene.turn_on
+            target:
+              entity_id: scene.sleepy
+          hold_action:
+            action: more-info
+        card_mod:
+          style: |-
+            ha-card {
+              height: 56px;
+              margin-top: calc(-56px - var(--vertical-stack-card-gap, var(--stack-card-gap, 8px)));
+              padding: 0 76px 0 0 !important;
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              background: none !important;
+              border: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              pointer-events: none;
+              position: relative;
+              z-index: 1;
+              --chip-height: 30px;
+              --chip-icon-size: 18px;
+              --chip-padding: 6px;
+              --chip-spacing: 4px;
+            }
+            .chip-container { flex-wrap: nowrap !important; }
+            .chip-container > * { pointer-events: auto; }
+      grid_options:
+        columns: full
+    - type: area
+      area: living_room
+      display_type: compact
+      features:
+      - type: area-controls
+        controls:
+        - light
+      features_position: inline
+      card_mod:
+        style: |-
+          ha-card {
+            {# Tint the card with the average colour and brightness of the lights that are on #}
+            {% set ls = area_entities('living_room') | select('match', 'light.') | select('is_state', 'on') | list %}
+            {% if ls %}
+            {% set ns = namespace(r=0, g=0, b=0, br=0) %}
+            {% for l in ls %}
+            {% set c = state_attr(l, 'rgb_color') or [245, 184, 61] %}
+            {% set ns.r = ns.r + c[0] %}{% set ns.g = ns.g + c[1] %}{% set ns.b = ns.b + c[2] %}
+            {% set ns.br = ns.br + (state_attr(l, 'brightness') or 255) %}
+            {% endfor %}
+            {% set n = ls | count %}
+            {% set rgb = [(ns.r / n) | int, (ns.g / n) | int, (ns.b / n) | int] | join(', ') %}
+            {% set k = 0.4 + 0.6 * ns.br / n / 255 %}
+            border-color: rgba({{ rgb }}, {{ (0.6 * k) | round(2) }}) !important;
+            box-shadow: 0 0 28px rgba({{ rgb }}, {{ (0.3 * k) | round(2) }}) !important;
+            background: rgba({{ rgb }}, {{ (0.1 * k) | round(2) }}) !important;
+            {% endif %}
+          }
+      grid_options:
+        columns: full
+    - type: area
+      area: kitchen
+      display_type: compact
+      features:
+      - type: area-controls
+        controls:
+        - light
+      features_position: inline
+      card_mod:
+        style: |-
+          ha-card {
+            {# Tint the card with the average colour and brightness of the lights that are on #}
+            {% set ls = area_entities('kitchen') | select('match', 'light.') | select('is_state', 'on') | list %}
+            {% if ls %}
+            {% set ns = namespace(r=0, g=0, b=0, br=0) %}
+            {% for l in ls %}
+            {% set c = state_attr(l, 'rgb_color') or [245, 184, 61] %}
+            {% set ns.r = ns.r + c[0] %}{% set ns.g = ns.g + c[1] %}{% set ns.b = ns.b + c[2] %}
+            {% set ns.br = ns.br + (state_attr(l, 'brightness') or 255) %}
+            {% endfor %}
+            {% set n = ls | count %}
+            {% set rgb = [(ns.r / n) | int, (ns.g / n) | int, (ns.b / n) | int] | join(', ') %}
+            {% set k = 0.4 + 0.6 * ns.br / n / 255 %}
+            border-color: rgba({{ rgb }}, {{ (0.6 * k) | round(2) }}) !important;
+            box-shadow: 0 0 28px rgba({{ rgb }}, {{ (0.3 * k) | round(2) }}) !important;
+            background: rgba({{ rgb }}, {{ (0.1 * k) | round(2) }}) !important;
+            {% endif %}
+          }
+      grid_options:
+        columns: full
+    - type: vertical-stack
+      cards:
+      - type: area
+        area: terrasse
+        display_type: compact
+        features:
+        - type: area-controls
+          controls:
+          - light
+        features_position: inline
+        card_mod:
+          style: |-
+            ha-card {
+              {# Tint the card with the average colour and brightness of the lights that are on #}
+              {% set ls = area_entities('terrasse') | select('match', 'light.') | select('is_state', 'on') | list %}
+              {% if ls %}
+              {% set ns = namespace(r=0, g=0, b=0, br=0) %}
+              {% for l in ls %}
+              {% set c = state_attr(l, 'rgb_color') or [245, 184, 61] %}
+              {% set ns.r = ns.r + c[0] %}{% set ns.g = ns.g + c[1] %}{% set ns.b = ns.b + c[2] %}
+              {% set ns.br = ns.br + (state_attr(l, 'brightness') or 255) %}
+              {% endfor %}
+              {% set n = ls | count %}
+              {% set rgb = [(ns.r / n) | int, (ns.g / n) | int, (ns.b / n) | int] | join(', ') %}
+              {% set k = 0.4 + 0.6 * ns.br / n / 255 %}
+              border-color: rgba({{ rgb }}, {{ (0.6 * k) | round(2) }}) !important;
+              box-shadow: 0 0 28px rgba({{ rgb }}, {{ (0.3 * k) | round(2) }}) !important;
+              background: rgba({{ rgb }}, {{ (0.1 * k) | round(2) }}) !important;
+              {% endif %}
+            }
+      - type: custom:mushroom-chips-card
+        alignment: end
+        chips:
+        - type: template
+          entity: input_boolean.geranium_outside
+          icon: mdi:flower
+          icon_color: '{{ ''pink'' if is_state(''input_boolean.geranium_outside'', ''on'') else ''grey'' }}'
+          tap_action:
+            action: toggle
+          hold_action:
+            action: more-info
+        card_mod:
+          style: |-
+            ha-card {
+              height: 56px;
+              margin-top: calc(-56px - var(--vertical-stack-card-gap, var(--stack-card-gap, 8px)));
+              padding: 0 16px 0 0 !important;
+              display: flex;
+              align-items: center;
+              justify-content: flex-end;
+              background: none !important;
+              border: none !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              pointer-events: none;
+              position: relative;
+              z-index: 1;
+              --chip-height: 30px;
+              --chip-icon-size: 18px;
+              --chip-padding: 6px;
+              --chip-spacing: 4px;
+            }
+            .chip-container { flex-wrap: nowrap !important; }
+            .chip-container > * { pointer-events: auto; }
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Weather
+      heading_style: subtitle
+    - type: weather-forecast
+      entity: weather.forecast_home
+      forecast_type: daily
+      show_current: true
+      show_forecast: true
+      grid_options:
+        columns: full
+    - type: custom:mushroom-template-card
+      entity: sensor.sun_next_setting
+      primary: Sunset {{ as_timestamp(states('sensor.sun_next_setting')) | timestamp_custom('%H:%M') }}
+      secondary: Sunrise {{ as_timestamp(states('sensor.sun_next_rising')) | timestamp_custom('%H:%M') }}
+      icon: mdi:weather-sunset
+      icon_color: orange
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Calendar
+      heading_style: subtitle
+    - type: calendar
+      initial_view: listWeek
+      entities:
+      - calendar.skander_chouba_gmail_com
+      - calendar.family
+      - calendar.family_2
+      - calendar.birthdays
+      - calendar.holidays_in_germany
+      - calendar.holidays_in_tunisia
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Activity & sleep
+      heading_style: subtitle
+    - type: custom:mushroom-template-card
+      entity: binary_sensor.my_s24ultra_interactive
+      primary: Phone
+      secondary: '{{ ''In use'' if is_state(''binary_sensor.my_s24ultra_interactive'', ''on'') else ''Screen off'' }}'
+      icon: mdi:cellphone
+      icon_color: '{{ ''green'' if is_state(''binary_sensor.my_s24ultra_interactive'', ''on'') else ''grey'' }}'
+      grid_options:
+        columns: 6
+    - type: custom:mushroom-template-card
+      entity: binary_sensor.computer_active
+      primary: Computer
+      secondary: '{% set idle = state_attr(''binary_sensor.computer_active'', ''idle_seconds'') | int(-1) %} {% if is_state(''binary_sensor.computer_active'', ''on'') %}In use {% elif idle < 0 %}Not reporting
+        {% else %}Idle {{ (idle / 60) | round(0) | int }} min{% endif %}'
+      icon: mdi:monitor
+      icon_color: '{{ ''green'' if is_state(''binary_sensor.computer_active'', ''on'') else ''grey'' }}'
+      grid_options:
+        columns: 6
+    - type: custom:mushroom-template-card
+      entity: sensor.my_s24ultra_sleep_confidence
+      primary: Sleep confidence
+      secondary: '{{ states(''sensor.my_s24ultra_sleep_confidence'') }}%'
+      icon: mdi:power-sleep
+      icon_color: '{{ ''indigo'' if states(''sensor.my_s24ultra_sleep_confidence'') | int(0) > 80 else ''grey'' }}'
+      grid_options:
+        columns: 6
+    - type: custom:mushroom-template-card
+      entity: sensor.galaxy_watch8_5r3y_battery_level
+      primary: Watch
+      secondary: '{{ states(''sensor.galaxy_watch8_5r3y_battery_level'') }}% battery'
+      icon: mdi:watch
+      icon_color: '{{ ''red'' if states(''sensor.galaxy_watch8_5r3y_battery_level'') | int(0) < 20 else ''green'' }}'
+      grid_options:
+        columns: 6
+    - type: markdown
+      content: '{% if is_state(''binary_sensor.user_active'', ''on'') %} You''re active, so the lights stay as they are. {% else %} No activity since {{ as_timestamp(states.binary_sensor.user_active.last_changed)
+        | timestamp_custom(''%H:%M'') }}. {% endif %} Lights turn off after 15 min without phone or computer use, sleep confidence above 80 %, between 22:00 and 10:00.'
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: To-do
+      heading_style: subtitle
+    - type: custom:mushroom-template-card
+      entity: todo.milestones
+      primary: Milestones
+      secondary: '{% set n = states(''todo.milestones'') | int(0) %}{{ n }} open · {{ ''tap to hide'' if is_state(''input_boolean.milestones_expanded'', ''on'') else ''tap to show'' }}'
+      icon: mdi:flag-checkered
+      icon_color: '{{ ''amber'' if is_state(''input_boolean.milestones_expanded'', ''on'') else ''grey'' }}'
+      badge_icon: '{{ ''mdi:chevron-up'' if is_state(''input_boolean.milestones_expanded'', ''on'') else ''mdi:chevron-down'' }}'
+      tap_action:
+        action: perform-action
+        perform_action: input_boolean.toggle
+        target:
+          entity_id: input_boolean.milestones_expanded
+      hold_action:
+        action: navigate
+        navigation_path: /todo?entity_id=todo.milestones
+      grid_options:
+        columns: full
+    - type: todo-list
+      entity: todo.milestones
+      visibility:
+      - condition: state
+        entity: input_boolean.milestones_expanded
+        state: 'on'
+      grid_options:
+        columns: full
+    - type: custom:mushroom-template-card
+      entity: todo.shopping_list
+      primary: Shopping list
+      secondary: '{% set n = states(''todo.shopping_list'') | int(0) %}{{ n }} open · {{ ''tap to hide'' if is_state(''input_boolean.shopping_list_expanded'', ''on'') else ''tap to show'' }}'
+      icon: mdi:cart
+      icon_color: '{{ ''green'' if is_state(''input_boolean.shopping_list_expanded'', ''on'') else ''grey'' }}'
+      badge_icon: '{{ ''mdi:chevron-up'' if is_state(''input_boolean.shopping_list_expanded'', ''on'') else ''mdi:chevron-down'' }}'
+      tap_action:
+        action: perform-action
+        perform_action: input_boolean.toggle
+        target:
+          entity_id: input_boolean.shopping_list_expanded
+      hold_action:
+        action: navigate
+        navigation_path: /todo?entity_id=todo.shopping_list
+      grid_options:
+        columns: full
+    - type: todo-list
+      entity: todo.shopping_list
+      hide_completed: true
+      visibility:
+      - condition: state
+        entity: input_boolean.shopping_list_expanded
+        state: 'on'
+      grid_options:
+        columns: full
+  - cards:
+    - type: heading
+      heading: Automations
+      heading_style: subtitle
+    - type: entities
+      show_header_toggle: false
+      entities:
+      - entity: automation.bedroom_light_automation_sleep
+        name: Bedtime charging → Sleepy
+      - entity: automation.coming_home
+        name: Coming home after sunset
+      - entity: automation.leaving_home_bedroom_lights_off
+        name: Leaving home → lights off
+      - entity: automation.sleep_detected_lights_off
+        name: Sleep detected → lights off
+      - entity: automation.geranium_move_inside_tonight
+        name: Geranium cold warning
+      - entity: automation.geranium_can_go_outside_again
+        name: Geranium spring notice
+      grid_options:
+        columns: full
+  - cards: []

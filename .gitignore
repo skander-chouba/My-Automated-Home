@@ -22,3 +22,5 @@ config/backups/
 config/tts/
 config/blueprints/
 **/__pycache__/
+config/.storage-backup-*/
+config/.shopping_list.json

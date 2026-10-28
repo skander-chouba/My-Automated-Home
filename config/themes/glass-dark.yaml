@@ -21,6 +21,21 @@ glass-dark:
   secondary-text-color: "#9aa3b2"
   disabled-text-color: "#5c6473"
 
+  # Text fields (e.g. "Add item" on to-do cards): dark fill so light text stays readable
+  input-fill-color: "rgba(255, 255, 255, 0.06)"
+  input-disabled-fill-color: "rgba(255, 255, 255, 0.03)"
+  input-ink-color: "#f2f3f5"
+  input-label-ink-color: "#9aa3b2"
+  input-idle-line-color: "rgba(255, 255, 255, 0.15)"
+  input-hover-line-color: "rgba(255, 255, 255, 0.35)"
+  mdc-text-field-fill-color: "rgba(255, 255, 255, 0.06)"
+  mdc-text-field-disabled-fill-color: "rgba(255, 255, 255, 0.03)"
+  mdc-text-field-ink-color: "#f2f3f5"
+  mdc-text-field-label-ink-color: "#9aa3b2"
+  mdc-text-field-idle-line-color: "rgba(255, 255, 255, 0.15)"
+  mdc-text-field-hover-line-color: "rgba(255, 255, 255, 0.35)"
+  ha-color-form-background: "rgba(255, 255, 255, 0.06)"
+
   # Accents: amber for "on", teal for OK states
   primary-color: "#f5b83d"
   accent-color: "#f5b83d"

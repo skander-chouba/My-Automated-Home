@@ -243,9 +243,9 @@ A dark "glass" dashboard (**Home** in the sidebar, `http://localhost:8123/dashbo
 
 | File | Purpose |
 | :--- | :--- |
-| `config/dashboards/home.yaml` | The dashboard (YAML mode: edit the file, then refresh the page) |
+| `config/dashboards/home.yaml` | Backup of the Home dashboard layout (the live one is UI-managed: drag and edit in the UI) |
 | `config/themes/glass-dark.yaml` | Theme: dark gradient, frosted cards, amber accent |
-| `config/configuration.yaml` | Registers the dashboard and loads card-mod globally |
+| `config/configuration.yaml` | Loads card-mod globally |
 
 ### Setup
 

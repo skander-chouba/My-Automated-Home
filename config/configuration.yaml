@@ -9,16 +9,6 @@ frontend:
   extra_module_url:
     - /hacsfiles/lovelace-card-mod/card-mod.js
 
-# Extra dashboards kept as YAML in the repo
-lovelace:
-  dashboards:
-    dashboard-home:
-      mode: yaml
-      filename: dashboards/home.yaml
-      title: Home
-      icon: mdi:home-assistant
-      show_in_sidebar: true
-
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
